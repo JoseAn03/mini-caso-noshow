@@ -1,0 +1,72 @@
+{
+  "reservas_totales": 6000,
+  "tasa_no_show_general_pct": 13.2,
+  "experimento": {
+    "n_control": 1482,
+    "n_tratamiento": 1498,
+    "tasa_control_pct": 15.05,
+    "tasa_recordatorio_pct": 9.01,
+    "diferencia_pp": -6.04,
+    "reduccion_relativa_pct": 40.1,
+    "z": -5.07,
+    "p_valor": 0.0,
+    "ic95_pp": [
+      -8.36,
+      -3.71
+    ]
+  },
+  "impacto": {
+    "ticket_promedio_usd": 353.0,
+    "reservas_recuperadas_experimento": 90.0,
+    "ingreso_recuperado_experimento_usd": 31772.0
+  },
+  "por_canal": [
+    {
+      "canal": "Web",
+      "reservas": 3047,
+      "tasa_no_show_pct": 15.1
+    },
+    {
+      "canal": "Agencia",
+      "reservas": 1134,
+      "tasa_no_show_pct": 13.0
+    },
+    {
+      "canal": "Mostrador",
+      "reservas": 1079,
+      "tasa_no_show_pct": 10.9
+    },
+    {
+      "canal": "Teléfono",
+      "reservas": 740,
+      "tasa_no_show_pct": 8.9
+    }
+  ],
+  "por_lead_time": [
+    {
+      "tramo": "0-2 días",
+      "reservas": 532,
+      "tasa_no_show_pct": 7.3
+    },
+    {
+      "tramo": "3-7 días",
+      "reservas": 1747,
+      "tasa_no_show_pct": 11.9
+    },
+    {
+      "tramo": "8-14 días",
+      "reservas": 2038,
+      "tasa_no_show_pct": 13.2
+    },
+    {
+      "tramo": "15-30 días",
+      "reservas": 1462,
+      "tasa_no_show_pct": 15.3
+    },
+    {
+      "tramo": "31+ días",
+      "reservas": 221,
+      "tasa_no_show_pct": 22.2
+    }
+  ]
+}
