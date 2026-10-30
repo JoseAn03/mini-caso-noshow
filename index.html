@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El costo invisible del no-show · Mini caso SQL + Power BI + Test A/B</title>
+<meta name="description" content="Mini caso de análisis de datos: cuánto cuesta el no-show en una operación de alquiler de vehículos y cómo un recordatorio lo redujo 40% en un test A/B. Datos 100% sintéticos.">
+<style>
+  :root{
+    --bg:#0b1220; --card:#101c33; --line:#33507a; --tx:#e8eef7; --tx2:#8fb3dd; --tx3:#c6d4e8;
+    --cian:#22d3ee; --azul:#38bdf8; --morado:#818cf8; --rojo:#f87171; --dorado:#fbbf24; --verde:#4ade80;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--tx);font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 18px 48px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .badge{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);
+         color:var(--tx2);border-radius:999px;padding:3px 10px;background:#0e1930}
+  h1{font-size:clamp(1.5rem,3.4vw,2.3rem);font-weight:800;letter-spacing:.01em}
+  h1 .accent{color:var(--cian)}
+  .sub{color:var(--tx2);margin-top:6px;font-size:1rem}
+  .autor{color:var(--tx3);margin-top:8px;font-size:.92rem}
+  .autor a{color:var(--cian);text-decoration:none}
+  .autor a:hover{text-decoration:underline}
+  .aviso{margin-top:14px;background:#0e1930;border:1px solid var(--dorado);color:var(--tx3);
+         border-radius:10px;padding:10px 14px;font-size:.9rem}
+  .aviso b{color:var(--dorado)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:22px 0}
+  .kpi{background:var(--card);border:1.4px solid var(--line);border-radius:12px;padding:16px 14px;text-align:center}
+  .kpi .t{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tx2)}
+  .kpi .v{font-size:2.15rem;font-weight:800;margin:6px 0 2px}
+  .kpi .n{font-size:.85rem;color:var(--tx3)}
+  .kpi.c1{border-color:var(--cian)} .kpi.c1 .v{color:var(--cian)}
+  .kpi.c2{border-color:var(--azul)} .kpi.c2 .v{color:var(--azul)}
+  .kpi.c3{border-color:var(--dorado)} .kpi.c3 .v{color:var(--dorado)}
+  .kpi.c4{border-color:var(--verde)} .kpi.c4 .v{color:var(--verde)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:820px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .panel.wide{grid-column:1 / -1}
+  .panel img{width:100%;height:auto;display:block}
+  .panel h3{font-size:1.02rem;margin-bottom:8px}
+  .panel p{color:var(--tx3);font-size:.93rem;margin-top:8px}
+  section{margin-top:30px}
+  h2{font-size:1.25rem;margin-bottom:10px;border-left:4px solid var(--cian);padding-left:10px}
+  section p{color:var(--tx3);max-width:75ch}
+  section p + p{margin-top:8px}
+  section b{color:var(--tx)}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.95rem}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:#0e1930;color:var(--tx2);font-weight:600}
+  td{color:var(--tx3)} td b{color:var(--tx)}
+  .result{background:#0e2417;border:1px solid var(--verde);border-radius:12px;padding:16px;margin-top:14px}
+  .result p{color:#d7f5e0}
+  footer{margin-top:38px;border-top:1px solid var(--line);padding-top:16px;color:var(--tx2);font-size:.88rem}
+  footer a{color:var(--cian);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badges">
+      <span class="badge">SQL</span><span class="badge">Python · pandas</span><span class="badge">Visual estilo Power BI</span>
+      <span class="badge">Test A/B</span><span class="badge">Mini caso de portafolio</span>
+    </div>
+    <h1>El costo invisible del <span class="accent">no-show</span></h1>
+    <p class="sub">Cuánto pierde una operación de alquiler de vehículos cuando el cliente no se presenta — y cómo un simple recordatorio redujo el problema un 40%, medido con un experimento A/B.</p>
+    <p class="autor">Por <b>José Andrés Sequeira Hernández</b>, Analista de Datos · Costa Rica —
+      <a href="https://github.com/JoseAn03/mini-caso-noshow">ver el código y las consultas SQL en GitHub</a></p>
+    <div class="aviso">📌 <b>Transparencia:</b> los datos son <b>100% sintéticos</b>, generados para replicar la estructura de un problema real. Ninguna cifra proviene de clientes. El proceso —pregunta, SQL, experimento, estadística— es el que uso en mi trabajo.</div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi c1"><div class="t">Tasa de no-show</div><div class="v">13,2%</div><div class="n">de las reservas no se presentan</div></div>
+    <div class="kpi c2"><div class="t">Peor canal: Web</div><div class="v">15,1%</div><div class="n">el teléfono es el mejor (8,9%)</div></div>
+    <div class="kpi c3"><div class="t">Efecto del recordatorio</div><div class="v">−40%</div><div class="n">de no-show en el test A/B</div></div>
+    <div class="kpi c4"><div class="t">Ingreso recuperado</div><div class="v">$31.772</div><div class="n">en 45 días de experimento</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <img src="visual/chart-canal.svg" alt="Tasa de no-show por canal de reserva">
+      <p>Reservar en línea sale fácil… y olvidar también. El canal <b>Web</b> concentra el mayor no-show; el contacto humano del teléfono retiene mejor.</p>
+    </div>
+    <div class="panel">
+      <img src="visual/chart-leadtime.svg" alt="Tasa de no-show según días de anticipación">
+      <p><b>La pista de oro:</b> con 0–2 días de anticipación casi todos llegan (7,3%); con 31+ días, el no-show se dispara a 22,2%. La gente reserva con emoción y un mes después la vida cambió.</p>
+    </div>
+    <div class="panel wide">
+      <img src="visual/chart-tendencia.svg" alt="Tasa de no-show por semana, con el inicio del experimento marcado">
+      <p>La tendencia semanal lo cuenta sola: al iniciar el experimento (la mitad de las reservas empieza a recibir recordatorio), la tasa general cae de ~15% a ~11–12%.</p>
+    </div>
+    <div class="panel wide">
+      <img src="visual/chart-ab.svg" alt="Resultado del test A/B: 15,0% contra 9,0%">
+      <p>El experimento, en limpio: 45 días, asignación aleatoria 50/50, casi 3.000 reservas entre los dos grupos.</p>
+      <table>
+        <tr><th>Grupo</th><th>Reservas</th><th>No-show</th></tr>
+        <tr><td>A · Sin recordatorio</td><td>1.482</td><td><b>15,0%</b></td></tr>
+        <tr><td>B · Recordatorio 48 h antes</td><td>1.498</td><td><b>9,0%</b></td></tr>
+      </table>
+      <div class="result">
+        <p><b>Resultado:</b> −6,0 puntos porcentuales (IC 95%: −8,4 a −3,7), reducción relativa del <b>40%</b>, <b>p &lt; 0,001</b> (test z de dos proporciones). Unas <b>90 reservas recuperadas en 45 días ≈ $31.800</b>; si el efecto se mantuviera un año, rondaría los <b>$250.000</b>. La lección: a veces la solución no es un modelo de tres meses — es medir bien, encontrar el patrón y mandar un recordatorio.</p>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2>El proceso, en corto</h2>
+    <p><b>1 · Pregunta de negocio.</b> ¿Cuánto cuesta el no-show, dónde se concentra y se puede reducir barato?</p>
+    <p><b>2 · SQL.</b> Segmenté 6.000 reservas por canal, anticipación, vehículo y cliente frecuente (consultas completas en el repositorio).</p>
+    <p><b>3 · Experimento.</b> Hipótesis: un recordatorio 48 h antes reduce el no-show. Diseño A/B aleatorizado, métrica única, prueba de proporciones.</p>
+    <p><b>4 · Siguiente paso.</b> Un modelo simple de riesgo por reserva (Web + mucha anticipación = riesgo alto) para dar doble aviso solo donde más duele.</p>
+  </section>
+
+  <footer>
+    Mini caso de portafolio · Datos sintéticos generados con Python (semilla fija, reproducible) ·
+    <a href="https://github.com/JoseAn03/mini-caso-noshow">github.com/JoseAn03/mini-caso-noshow</a> ·
+    José Andrés Sequeira Hernández — Python · SQL · Power BI · Tableau
+  </footer>
+
+</div>
+</body>
+</html>

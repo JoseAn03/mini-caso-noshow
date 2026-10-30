@@ -141,6 +141,11 @@ res = {
         "ingreso_recuperado_experimento_usd": round(ingreso_rec, 0),
     },
     "por_canal": q_canal.to_dict("records"),
+    "tendencia_semanal": [
+        {"semana": str(idx.date()), "tasa_no_show_pct": round(100.0 * val, 1)}
+        for idx, val in df.set_index("fecha_retiro").resample("W")["estado"]
+        .apply(lambda s: (s == "no_show").mean()).items()
+    ],
     "por_lead_time": q_lead.to_dict("records"),
 }
 (BASE / "resultados.json").write_text(json.dumps(res, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -155,58 +160,115 @@ plt.rcParams.update({
     "axes.edgecolor": "#33507a", "axes.labelcolor": "#e8eef7",
     "xtick.color": "#aebfd6", "ytick.color": "#aebfd6", "font.size": 11,
 })
-CIAN, DORADO, ROJO = "#22d3ee", "#fbbf24", "#f87171"
-fig = plt.figure(figsize=(13.33, 7.5))
-gs = fig.add_gridspec(2, 3, height_ratios=[1, 1.35], hspace=0.55, wspace=0.32,
-                      left=0.075, right=0.97, top=0.86, bottom=0.09)
+CIAN, DORADO, ROJO, MORADO = "#22d3ee", "#fbbf24", "#f87171", "#818cf8"
+sem = df.set_index("fecha_retiro").resample("W")["estado"].apply(lambda s: (s == "no_show").mean() * 100)
+
+fig = plt.figure(figsize=(13.33, 8.6))
+gs = fig.add_gridspec(3, 4, height_ratios=[0.85, 1.25, 1.0], hspace=0.62, wspace=0.34,
+                      left=0.065, right=0.975, top=0.875, bottom=0.075)
 fig.suptitle("EL COSTO INVISIBLE DEL NO-SHOW  ·  Mini caso SQL + Power BI + Test A/B",
-             fontsize=16.5, fontweight="bold", x=0.06, ha="left")
-fig.text(0.06, 0.905, "Datos sintéticos de una operación de alquiler de vehículos · 6.000 reservas · jul–sep 2026",
+             fontsize=16.5, fontweight="bold", x=0.065, ha="left")
+fig.text(0.065, 0.912, "Datos sintéticos de una operación de alquiler de vehículos · 6.000 reservas · jul–sep 2026",
          fontsize=11.5, color="#8fb3dd")
 
 kpis = [
     ("TASA DE NO-SHOW", f"{tasa_general:.1f}%", "de las reservas no se presentan", CIAN),
-    ("GRUPO CONTROL (A)", f"{100*p1:.1f}%", f"no-show sin recordatorio · n={n1:,}", ROJO),
-    ("CON RECORDATORIO (B)", f"{100*p2:.1f}%", f"no-show con aviso 48 h · n={n2:,}", DORADO),
+    ("PEOR CANAL: WEB", f"{q_canal.tasa_no_show_pct.max():.1f}%", "el teléfono es el mejor (8,9%)", "#38bdf8"),
+    ("EFECTO DEL RECORDATORIO", f"−{100*(p1-p2)/p1:.0f}%", "de no-show en el test A/B", DORADO),
+    ("INGRESO RECUPERADO", f"${ingreso_rec:,.0f}", "en 45 días de experimento", "#4ade80"),
 ]
 for i, (titulo, valor, nota, color) in enumerate(kpis):
     ax = fig.add_subplot(gs[0, i]); ax.axis("off")
-    ax.add_patch(plt.Rectangle((0.02, 0.06), 0.96, 0.88, facecolor="#101c33",
+    ax.add_patch(plt.Rectangle((0.02, 0.05), 0.96, 0.9, facecolor="#101c33",
                                edgecolor=color, linewidth=1.4, zorder=1))
-    ax.text(0.5, 0.78, titulo, ha="center", fontsize=11.5, color="#8fb3dd", zorder=2)
-    ax.text(0.5, 0.47, valor, ha="center", fontsize=31, fontweight="bold", color=color, zorder=2)
-    ax.text(0.5, 0.18, nota, ha="center", fontsize=9.5, color="#c6d4e8", zorder=2)
+    ax.text(0.5, 0.79, titulo, ha="center", fontsize=10.5, color="#8fb3dd", zorder=2)
+    ax.text(0.5, 0.48, valor, ha="center", fontsize=25, fontweight="bold", color=color, zorder=2)
+    ax.text(0.5, 0.17, nota, ha="center", fontsize=9, color="#c6d4e8", zorder=2)
     ax.set_xlim(0, 1); ax.set_ylim(0, 1)
 
-ax = fig.add_subplot(gs[1, 0])
-ax.barh(q_canal.canal[::-1], q_canal.tasa_no_show_pct[::-1], color=[CIAN, "#38bdf8", "#818cf8", "#64748b"], height=0.62)
-ax.set_title("No-show por canal de reserva (%)", fontsize=12.5, color="#e8eef7", loc="left")
-ax.set_xlim(0, max(q_canal.tasa_no_show_pct) * 1.25)
+ax = fig.add_subplot(gs[1, 0:1])
+ax.barh(q_canal.canal[::-1], q_canal.tasa_no_show_pct[::-1], color=[CIAN, "#38bdf8", MORADO, "#64748b"], height=0.62)
+ax.set_title("No-show por canal (%)", fontsize=12, color="#e8eef7", loc="left")
+ax.set_xlim(0, max(q_canal.tasa_no_show_pct) * 1.28)
 for v, y in zip(q_canal.tasa_no_show_pct[::-1], range(len(q_canal))):
-    ax.text(v + 0.4, y, f"{v:.1f}%", va="center", fontsize=11)
+    ax.text(v + 0.4, y, f"{v:.1f}%", va="center", fontsize=10.5)
 ax.grid(axis="x", color="#1d2f4d"); ax.set_axisbelow(True)
 
-ax = fig.add_subplot(gs[1, 1])
-ax.bar(q_lead.tramo, q_lead.tasa_no_show_pct, color="#818cf8", width=0.62)
-ax.set_title("No-show según días de anticipación (%)", fontsize=12.5, color="#e8eef7", loc="left")
+ax = fig.add_subplot(gs[1, 1:3])
+ax.bar(q_lead.tramo, q_lead.tasa_no_show_pct, color=MORADO, width=0.6)
+ax.set_title("No-show según días de anticipación (%)  ·  la pista de oro", fontsize=12, color="#e8eef7", loc="left")
 ax.set_ylim(0, max(q_lead.tasa_no_show_pct) * 1.3)
 for v, x in zip(q_lead.tasa_no_show_pct, range(len(q_lead))):
-    ax.text(x, v + 0.5, f"{v:.1f}%", ha="center", fontsize=11)
-ax.tick_params(axis="x", labelsize=9.5)
+    ax.text(x, v + 0.5, f"{v:.1f}%", ha="center", fontsize=10.5)
 ax.grid(axis="y", color="#1d2f4d"); ax.set_axisbelow(True)
 
-ax = fig.add_subplot(gs[1, 2])
+ax = fig.add_subplot(gs[1, 3:4])
 vals = [100 * p1, 100 * p2]
 errs = [100 * 1.96 * math.sqrt(p1 * (1 - p1) / n1), 100 * 1.96 * math.sqrt(p2 * (1 - p2) / n2)]
-ax.bar(["A · Sin recordatorio", "B · Recordatorio 48 h"], vals, yerr=errs, capsize=6,
-       color=[ROJO, DORADO], width=0.55, error_kw={"ecolor": "#e8eef7", "lw": 1.4})
 p_txt = "p < 0.001" if p_valor < 0.001 else f"p = {p_valor:.3f}"
-ax.set_title(f"Test A/B: −{100*(p1-p2)/p1:.0f}% de no-show ({p_txt})", fontsize=12.5, color="#e8eef7", loc="left")
-ax.set_ylim(0, max(vals) * 1.45)
-for v, x in zip(vals, range(2)):
-    ax.text(x, v + errs[x] + 0.7, f"{v:.1f}%", ha="center", fontsize=13, fontweight="bold")
+ax.bar(["A · Control", "B · Aviso 48 h"], vals, yerr=errs, capsize=5,
+       color=[ROJO, DORADO], width=0.55, error_kw={"ecolor": "#e8eef7", "lw": 1.3})
+ax.set_title(f"Test A/B ({p_txt})", fontsize=12, color="#e8eef7", loc="left")
+ax.set_ylim(0, max(vals) * 1.5)
+for v, e, x in zip(vals, errs, range(2)):
+    ax.text(x, v + e + 0.7, f"{v:.1f}%", ha="center", fontsize=12.5, fontweight="bold")
 ax.grid(axis="y", color="#1d2f4d"); ax.set_axisbelow(True)
+
+ax = fig.add_subplot(gs[2, :])
+ax.plot(sem.index, sem.values, color=CIAN, lw=2.2, marker="o", ms=4.5)
+ax.fill_between(sem.index, sem.values, color=CIAN, alpha=0.12)
+ax.axvline(pd.Timestamp("2026-08-15"), color=DORADO, ls="--", lw=1.4)
+ax.annotate("inicio del experimento\n(50% recibe recordatorio)", xy=(pd.Timestamp("2026-08-15"), sem.max() * 0.97),
+            xytext=(pd.Timestamp("2026-08-19"), sem.max() * 1.0), fontsize=10, color=DORADO)
+ax.set_title("Tasa de no-show por semana (%)", fontsize=12, color="#e8eef7", loc="left")
+ax.grid(color="#1d2f4d"); ax.set_axisbelow(True)
+
 
 for ext in ("png", "svg"):
     fig.savefig(BASE / "visual" / f"dashboard-noshow.{ext}", dpi=170 if ext == "png" else None)
-print("visual OK")
+plt.close(fig)
+
+# --- gráficos individuales (SVG) para el dashboard web ---
+def save_chart(fig, name):
+    fig.savefig(BASE / "visual" / name, format="svg")
+    plt.close(fig)
+
+fig, ax = plt.subplots(figsize=(5.2, 3.4))
+ax.barh(q_canal.canal[::-1], q_canal.tasa_no_show_pct[::-1], color=[CIAN, "#38bdf8", MORADO, "#64748b"], height=0.62)
+ax.set_title("No-show por canal de reserva (%)", fontsize=12, loc="left")
+ax.set_xlim(0, max(q_canal.tasa_no_show_pct) * 1.28)
+for v, y in zip(q_canal.tasa_no_show_pct[::-1], range(len(q_canal))):
+    ax.text(v + 0.4, y, f"{v:.1f}%", va="center", fontsize=10.5)
+ax.grid(axis="x", color="#1d2f4d"); ax.set_axisbelow(True)
+fig.tight_layout(); save_chart(fig, "chart-canal.svg")
+
+fig, ax = plt.subplots(figsize=(5.2, 3.4))
+ax.bar(q_lead.tramo, q_lead.tasa_no_show_pct, color=MORADO, width=0.6)
+ax.set_title("No-show según días de anticipación (%)", fontsize=12, loc="left")
+ax.set_ylim(0, max(q_lead.tasa_no_show_pct) * 1.3)
+for v, x in zip(q_lead.tasa_no_show_pct, range(len(q_lead))):
+    ax.text(x, v + 0.5, f"{v:.1f}%", ha="center", fontsize=10.5)
+ax.tick_params(axis="x", labelsize=9)
+ax.grid(axis="y", color="#1d2f4d"); ax.set_axisbelow(True)
+fig.tight_layout(); save_chart(fig, "chart-leadtime.svg")
+
+fig, ax = plt.subplots(figsize=(5.2, 3.4))
+ax.bar(["A · Sin recordatorio", "B · Recordatorio 48 h"], vals, yerr=errs, capsize=5,
+       color=[ROJO, DORADO], width=0.5, error_kw={"ecolor": "#e8eef7", "lw": 1.3})
+ax.set_title(f"Test A/B: {100*p1:.1f}% → {100*p2:.1f}%  ({p_txt})", fontsize=12, loc="left")
+ax.set_ylim(0, max(vals) * 1.5)
+for v, e, x in zip(vals, errs, range(2)):
+    ax.text(x, v + e + 0.7, f"{v:.1f}%", ha="center", fontsize=12.5, fontweight="bold")
+ax.grid(axis="y", color="#1d2f4d"); ax.set_axisbelow(True)
+fig.tight_layout(); save_chart(fig, "chart-ab.svg")
+
+fig, ax = plt.subplots(figsize=(10.4, 3.2))
+ax.plot(sem.index, sem.values, color=CIAN, lw=2.2, marker="o", ms=4.5)
+ax.fill_between(sem.index, sem.values, color=CIAN, alpha=0.12)
+ax.axvline(pd.Timestamp("2026-08-15"), color=DORADO, ls="--", lw=1.4)
+ax.annotate("inicio del experimento", xy=(pd.Timestamp("2026-08-15"), sem.max() * 0.97),
+            xytext=(pd.Timestamp("2026-08-19"), sem.max() * 1.0), fontsize=10, color=DORADO)
+ax.set_title("Tasa de no-show por semana (%)", fontsize=12, loc="left")
+ax.grid(color="#1d2f4d"); ax.set_axisbelow(True)
+fig.tight_layout(); save_chart(fig, "chart-tendencia.svg")
+print("visual OK (dashboard + 4 charts)")

@@ -42,6 +42,64 @@
       "tasa_no_show_pct": 8.9
     }
   ],
+  "tendencia_semanal": [
+    {
+      "semana": "2026-07-05",
+      "tasa_no_show_pct": 11.2
+    },
+    {
+      "semana": "2026-07-12",
+      "tasa_no_show_pct": 13.7
+    },
+    {
+      "semana": "2026-07-19",
+      "tasa_no_show_pct": 14.5
+    },
+    {
+      "semana": "2026-07-26",
+      "tasa_no_show_pct": 14.0
+    },
+    {
+      "semana": "2026-08-02",
+      "tasa_no_show_pct": 15.5
+    },
+    {
+      "semana": "2026-08-09",
+      "tasa_no_show_pct": 13.7
+    },
+    {
+      "semana": "2026-08-16",
+      "tasa_no_show_pct": 15.3
+    },
+    {
+      "semana": "2026-08-23",
+      "tasa_no_show_pct": 10.0
+    },
+    {
+      "semana": "2026-08-30",
+      "tasa_no_show_pct": 12.9
+    },
+    {
+      "semana": "2026-09-06",
+      "tasa_no_show_pct": 11.8
+    },
+    {
+      "semana": "2026-09-13",
+      "tasa_no_show_pct": 11.8
+    },
+    {
+      "semana": "2026-09-20",
+      "tasa_no_show_pct": 11.9
+    },
+    {
+      "semana": "2026-09-27",
+      "tasa_no_show_pct": 14.5
+    },
+    {
+      "semana": "2026-10-04",
+      "tasa_no_show_pct": 9.5
+    }
+  ],
   "por_lead_time": [
     {
       "tramo": "0-2 días",
