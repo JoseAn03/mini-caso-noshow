@@ -2,6 +2,10 @@
 
 ### Un mini caso con SQL, visualización y un test A/B — contado como me pasó a mí
 
+![SQL](https://img.shields.io/badge/SQL-SQLite-22d3ee) ![Python](https://img.shields.io/badge/Python-pandas%20·%20matplotlib-38bdf8) ![Visual](https://img.shields.io/badge/Visual-estilo%20Power%20BI-fbbf24) ![Test A/B](https://img.shields.io/badge/Experimento-Test%20A%2FB-f87171)
+
+> 🔴 **Dashboard en vivo:** [josean03.github.io/mini-caso-noshow](https://josean03.github.io/mini-caso-noshow/) — la versión web e interactiva de este caso.
+
 ![Dashboard del caso](visual/dashboard-noshow.png)
 
 ## Primero, la historia
@@ -45,6 +49,15 @@ Un modelo simple que le ponga una etiqueta de riesgo a cada reserva (Web + mucha
 ## Herramientas que usé
 
 SQL (SQLite) · Python (pandas y matplotlib para generar los datos, la estadística y la visual) · Visual estilo Power BI · Test A/B con prueba z de proporciones
+
+## Cómo reproducirlo
+
+```bash
+pip install pandas matplotlib
+python analisis.py
+```
+
+Eso regenera los datos sintéticos (`datos/reservas_sinteticas.csv`), corre las consultas y el test, guarda `resultados.json` y redibuja el dashboard y los gráficos de `visual/`. El dashboard web es `index.html` (publicado con GitHub Pages).
 
 ---
 
